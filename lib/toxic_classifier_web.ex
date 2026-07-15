@@ -1,7 +1,7 @@
 defmodule ToxicClassifierWeb do
   @moduledoc false
 
-  def static_paths, do: ~w(assets favicon.ico)
+  def static_paths, do: ~w(assets favicon.ico favicon.svg)
 
   def router do
     quote do

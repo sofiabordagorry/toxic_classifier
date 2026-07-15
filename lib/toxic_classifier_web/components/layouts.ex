@@ -99,6 +99,26 @@ defmodule ToxicClassifierWeb.Layouts do
           .bar { height: 9px; background: #eeecea; border-radius: 999px; overflow: hidden; }
           .fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width .14s ease; }
           .hint { color: #a8a29e; font-size: .82rem; margin-top: 1.2rem; text-align: center; }
+          .bert-picker { margin-top: 1.3rem; }
+          .picker-label { display: block; font-size: .8rem; font-weight: 600; color: #57534e; margin-bottom: .5rem; }
+          .segmented { display: inline-flex; gap: .45rem; flex-wrap: wrap; }
+          button.seg {
+            width: auto; background: #fff; color: #57534e; border: 1px solid var(--line);
+            border-radius: 9px; padding: .5rem .9rem; font-size: .85rem; font-weight: 600;
+            position: relative; cursor: pointer;
+          }
+          button.seg:hover { background: #faf9f8; }
+          button.seg.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+          .seg .tip {
+            display: none; position: absolute; z-index: 10; left: 0; top: calc(100% + .5rem);
+            width: 240px; background: #1c1917; color: #fafafa; border-radius: 10px;
+            padding: .7rem .8rem; font-weight: 400; text-align: left; line-height: 1.45;
+            box-shadow: 0 8px 24px rgba(0,0,0,.2);
+          }
+          .seg:hover .tip { display: block; }
+          .tip b { display: block; font-size: .85rem; margin-bottom: .15rem; }
+          .tip-meta { display: block; font-size: .72rem; color: #a8a29e; margin-bottom: .4rem; }
+          .tip-desc { display: block; font-size: .8rem; color: #e7e5e4; }
         </style>
       </head>
       <body>

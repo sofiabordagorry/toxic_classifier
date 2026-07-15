@@ -15,8 +15,8 @@ defmodule ToxicClassifierWeb.ClassifierLive do
     {"Logistic Regression",
      "Learns a weight per word with gradient descent instead of assuming words are independent — usually the most accurate.",
      nil},
-    {"toxic-bert",
-     "A pretrained transformer that understands context — it catches cases the simple models miss, at the cost of being much heavier. Runs in Elixir via",
+    {"Pretrained transformer",
+     "Understands context, so it catches cases the simple models miss — at the cost of being much heavier. Pick a general or gaming-specific one below. Runs in Elixir via",
      {"Bumblebee ↗", "https://hexdocs.pm/bumblebee"}}
   ]
 
@@ -32,7 +32,9 @@ defmodule ToxicClassifierWeb.ClassifierLive do
        train_error: nil,
        text: "",
        results: [],
-       bert_status: ToxicClassifier.Bert.status()
+       bert_id: ToxicClassifier.Bert.default_id(),
+       bert_options: ToxicClassifier.Bert.options(),
+       bert_status: ToxicClassifier.Bert.status(ToxicClassifier.Bert.default_id())
      )
      |> allow_upload(:dataset, accept: ~w(.csv), max_entries: 1, max_file_size: 200_000_000)}
   end
@@ -56,7 +58,21 @@ defmodule ToxicClassifierWeb.ClassifierLive do
 
   @impl true
   def handle_event("classify", %{"text" => text}, socket) do
-    {:noreply, assign(socket, text: text, results: score(socket.assigns.models, text))}
+    results = score(socket.assigns.models, text, socket.assigns.bert_id)
+    {:noreply, assign(socket, text: text, results: results)}
+  end
+
+  @impl true
+  def handle_event("select_bert", %{"bert" => id}, socket) do
+    bert_id = String.to_existing_atom(id)
+    results = score(socket.assigns.models, socket.assigns.text, bert_id)
+
+    {:noreply,
+     assign(socket,
+       bert_id: bert_id,
+       bert_status: ToxicClassifier.Bert.status(bert_id),
+       results: results
+     )}
   end
 
   @impl true
@@ -71,7 +87,11 @@ defmodule ToxicClassifierWeb.ClassifierLive do
     )
 
     {:noreply,
-     assign(socket, models: models, training?: false, results: score(models, socket.assigns.text))}
+     assign(socket,
+       models: models,
+       training?: false,
+       results: score(models, socket.assigns.text, socket.assigns.bert_id)
+     )}
   end
 
   @impl true
@@ -85,15 +105,18 @@ defmodule ToxicClassifierWeb.ClassifierLive do
 
   @impl true
   def handle_info({:models_updated, models}, socket) do
-    {:noreply, assign(socket, models: models, results: score(models, socket.assigns.text))}
+    results = score(models, socket.assigns.text, socket.assigns.bert_id)
+    {:noreply, assign(socket, models: models, results: results)}
   end
 
   @impl true
-  def handle_info(:bert_ready, socket) do
+  def handle_info({:bert_ready, _id}, socket) do
+    results = score(socket.assigns.models, socket.assigns.text, socket.assigns.bert_id)
+
     {:noreply,
      assign(socket,
-       bert_status: :ready,
-       results: score(socket.assigns.models, socket.assigns.text)
+       bert_status: ToxicClassifier.Bert.status(socket.assigns.bert_id),
+       results: results
      )}
   end
 
@@ -134,6 +157,22 @@ defmodule ToxicClassifierWeb.ClassifierLive do
                     placeholder="e.g. you are so..."><%= @text %></textarea>
         </form>
 
+        <div class="bert-picker">
+          <span class="picker-label">Transformer to compare</span>
+          <div class="segmented">
+            <button :for={opt <- @bert_options} type="button"
+                    class={["seg", opt.id == @bert_id && "on"]}
+                    phx-click="select_bert" phx-value-bert={opt.id}>
+              {opt.name}
+              <span class="tip">
+                <b>{opt.name}</b>
+                <span class="tip-meta">{opt.meta}</span>
+                <span class="tip-desc">{opt.desc}</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
         <div class="meters">
           <div :for={{name, p} <- @results} class="meter">
             <div class="meter-head">
@@ -150,7 +189,8 @@ defmodule ToxicClassifierWeb.ClassifierLive do
         </div>
 
         <p :if={@results == []} class="hint">Start typing above to see each model's toxicity score.</p>
-        <p :if={@bert_status == :loading} class="hint">toxic-bert (transformer) is warming up…</p>
+        <p :if={@bert_status == :loading} class="hint">{ToxicClassifier.Bert.name(@bert_id)} is warming up…</p>
+        <p :if={@bert_status == :failed} class="hint">{ToxicClassifier.Bert.name(@bert_id)} couldn't load on this host.</p>
       </div>
 
       <form class="card" phx-change="validate" phx-submit="train">
@@ -195,18 +235,19 @@ defmodule ToxicClassifierWeb.ClassifierLive do
     %{classifiers: classifiers, summary: summary}
   end
 
-  defp score(_models, ""), do: []
-  defp score(nil, _text), do: []
+  defp score(_models, "", _bert_id), do: []
+  defp score(nil, _text, _bert_id), do: []
 
-  defp score(%{classifiers: classifiers}, text) do
-    Enum.map(classifiers, fn {name, proba_fn} -> {name, proba_fn.(text)} end) ++ bert_result(text)
+  defp score(%{classifiers: classifiers}, text, bert_id) do
+    Enum.map(classifiers, fn {name, proba_fn} -> {name, proba_fn.(text)} end) ++
+      bert_result(text, bert_id)
   end
 
-  defp bert_result(text) do
-    if ToxicClassifier.Bert.status() == :ready do
-      case ToxicClassifier.Bert.toxic_score(text) do
+  defp bert_result(text, bert_id) do
+    if ToxicClassifier.Bert.status(bert_id) == :ready do
+      case ToxicClassifier.Bert.toxic_score(bert_id, text) do
         nil -> []
-        score -> [{"toxic-bert", score}]
+        score -> [{ToxicClassifier.Bert.name(bert_id), score}]
       end
     else
       []

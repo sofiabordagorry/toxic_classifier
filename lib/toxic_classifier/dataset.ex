@@ -92,7 +92,7 @@ defmodule ToxicClassifier.Dataset do
 
   defp load_simple(header, data) do
     text_idx = Enum.find_index(header, &(&1 in ["text", "comment", "comment_text"])) || 0
-    label_idx = Enum.find_index(header, &(&1 in ["label", "class", "toxic"])) || 1
+    label_idx = Enum.find_index(header, &(&1 in ["label", "labels", "class", "toxic", "hateful"])) || 1
 
     Enum.map(data, fn row ->
       text = Enum.at(row, text_idx, "")
@@ -100,6 +100,18 @@ defmodule ToxicClassifier.Dataset do
     end)
   end
 
-  defp normalize_label(v) when v in ["toxic", "1", "spam", "true"], do: :toxic
-  defp normalize_label(_), do: :clean
+  @toxic_labels ~w(toxic spam hateful hate offensive aggressive abusive true yes si sí)
+
+  defp normalize_label(v) do
+    case v |> to_string() |> String.trim() |> String.downcase() do
+      s when s in @toxic_labels ->
+        :toxic
+
+      s ->
+        case Float.parse(s) do
+          {n, _} when n > 0 -> :toxic
+          _ -> :clean
+        end
+    end
+  end
 end

@@ -11,6 +11,15 @@ with three text classifiers.
 | `ToxicClassifier.ComplementNB` | Complement NB: estimate each class from its *complement*, better on imbalanced data. | generative |
 | `ToxicClassifier.LogisticRegression` | Logistic regression via stochastic gradient descent; learns a weight per feature. | discriminative |
 
+## Web UI
+
+```bash
+mix phx.server   # then open http://localhost:4000
+```
+
+Upload a labelled CSV, it trains the three models live, and typing a phrase
+shows a toxicity meter per model. No database — models live in memory per session.
+
 ## Running
 
 Pass a dataset path, or omit it to use the bundled sample.

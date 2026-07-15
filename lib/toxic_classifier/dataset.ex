@@ -92,7 +92,9 @@ defmodule ToxicClassifier.Dataset do
 
   defp load_simple(header, data) do
     text_idx = Enum.find_index(header, &(&1 in ["text", "comment", "comment_text"])) || 0
-    label_idx = Enum.find_index(header, &(&1 in ["label", "labels", "class", "toxic", "hateful"])) || 1
+
+    label_idx =
+      Enum.find_index(header, &(&1 in ["label", "labels", "class", "toxic", "hateful"])) || 1
 
     Enum.map(data, fn row ->
       text = Enum.at(row, text_idx, "")

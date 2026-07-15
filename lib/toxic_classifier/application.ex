@@ -8,6 +8,7 @@ defmodule ToxicClassifier.Application do
     children = [
       {Phoenix.PubSub, name: ToxicClassifier.PubSub},
       ToxicClassifier.ModelStore,
+      ToxicClassifier.Bert,
       ToxicClassifierWeb.Endpoint
     ]
 

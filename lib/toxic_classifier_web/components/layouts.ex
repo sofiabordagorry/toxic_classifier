@@ -43,6 +43,8 @@ defmodule ToxicClassifierWeb.Layouts do
           .models li { display: flex; flex-direction: column; gap: .15rem; padding-left: .85rem; border-left: 2px solid var(--accent); }
           .m-name { font-weight: 650; font-size: .9rem; color: var(--ink); }
           .m-desc { font-size: .85rem; color: var(--muted); line-height: 1.5; }
+          .m-desc a { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
+          .m-desc a:hover { text-decoration: underline; }
           label { display: block; font-size: .82rem; font-weight: 600; color: #57534e; margin-bottom: .35rem; }
           .upload-note { margin: 0 0 .9rem; font-size: .82rem; color: var(--muted); }
           .upload-note code { background: #f5f5f4; padding: .1rem .35rem; border-radius: 5px; font-size: .78rem; color: #44403c; }

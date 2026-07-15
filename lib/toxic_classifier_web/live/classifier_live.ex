@@ -7,11 +7,17 @@ defmodule ToxicClassifierWeb.ClassifierLive do
 
   @models_info [
     {"Naive Bayes",
-     "Counts how often each word shows up in toxic vs. clean comments — the classic text-classification baseline."},
+     "Counts how often each word shows up in toxic vs. clean comments — the classic text-classification baseline.",
+     nil},
     {"Complement NB",
-     "A Naive Bayes variant that estimates each class from its complement, coping better with imbalanced data."},
+     "A Naive Bayes variant that estimates each class from its complement, coping better with imbalanced data.",
+     nil},
     {"Logistic Regression",
-     "Learns a weight per word with gradient descent instead of assuming words are independent — usually the most accurate."}
+     "Learns a weight per word with gradient descent instead of assuming words are independent — usually the most accurate.",
+     nil},
+    {"toxic-bert",
+     "A pretrained transformer that understands context — it catches cases the simple models miss, at the cost of being much heavier. Runs in Elixir via",
+     {"Bumblebee ↗", "https://hexdocs.pm/bumblebee"}}
   ]
 
   @impl true
@@ -25,7 +31,8 @@ defmodule ToxicClassifierWeb.ClassifierLive do
        training?: false,
        train_error: nil,
        text: "",
-       results: []
+       results: [],
+       bert_status: ToxicClassifier.Bert.status()
      )
      |> allow_upload(:dataset, accept: ~w(.csv), max_entries: 1, max_file_size: 200_000_000)}
   end
@@ -55,7 +62,13 @@ defmodule ToxicClassifierWeb.ClassifierLive do
   @impl true
   def handle_async(:training, {:ok, models}, socket) do
     ModelStore.put(models)
-    Phoenix.PubSub.broadcast_from(ToxicClassifier.PubSub, self(), @topic, {:models_updated, models})
+
+    Phoenix.PubSub.broadcast_from(
+      ToxicClassifier.PubSub,
+      self(),
+      @topic,
+      {:models_updated, models}
+    )
 
     {:noreply,
      assign(socket, models: models, training?: false, results: score(models, socket.assigns.text))}
@@ -64,12 +77,24 @@ defmodule ToxicClassifierWeb.ClassifierLive do
   @impl true
   def handle_async(:training, {:exit, _reason}, socket) do
     {:noreply,
-     assign(socket, training?: false, train_error: "Training failed — check the CSV has a text and a label column.")}
+     assign(socket,
+       training?: false,
+       train_error: "Training failed — check the CSV has a text and a label column."
+     )}
   end
 
   @impl true
   def handle_info({:models_updated, models}, socket) do
     {:noreply, assign(socket, models: models, results: score(models, socket.assigns.text))}
+  end
+
+  @impl true
+  def handle_info(:bert_ready, socket) do
+    {:noreply,
+     assign(socket,
+       bert_status: :ready,
+       results: score(socket.assigns.models, socket.assigns.text)
+     )}
   end
 
   @impl true
@@ -84,18 +109,20 @@ defmodule ToxicClassifierWeb.ClassifierLive do
 
       <div class="card about">
         <p class="about-lead">
-          Upload a labelled CSV and three classic classifiers train on it. Then type any phrase
-          and each one scores how toxic it looks.
+          Upload a labelled CSV and three classic classifiers train on it, then compare them
+          against a pretrained transformer. Type any phrase and each one scores how toxic it looks.
         </p>
         <ul class="models">
-          <li :for={{name, desc} <- @models_info}>
+          <li :for={{name, desc, link} <- @models_info}>
             <span class="m-name">{name}</span>
-            <span class="m-desc">{desc}</span>
+            <span class="m-desc">
+              {desc}<a :if={link} href={elem(link, 1)} target="_blank" rel="noopener">{" "}{elem(link, 0)}</a>
+            </span>
           </li>
         </ul>
       </div>
 
-      <div :if={@training?} class="card muted">Training the three models…</div>
+      <div :if={@training?} class="card muted">Training on your dataset…</div>
       <div :if={@train_error} class="card err">{@train_error}</div>
 
       <div :if={@models && !@training?} class="card">
@@ -123,6 +150,7 @@ defmodule ToxicClassifierWeb.ClassifierLive do
         </div>
 
         <p :if={@results == []} class="hint">Start typing above to see each model's toxicity score.</p>
+        <p :if={@bert_status == :loading} class="hint">toxic-bert (transformer) is warming up…</p>
       </div>
 
       <form class="card" phx-change="validate" phx-submit="train">
@@ -167,9 +195,22 @@ defmodule ToxicClassifierWeb.ClassifierLive do
     %{classifiers: classifiers, summary: summary}
   end
 
+  defp score(_models, ""), do: []
   defp score(nil, _text), do: []
+
   defp score(%{classifiers: classifiers}, text) do
-    Enum.map(classifiers, fn {name, proba_fn} -> {name, proba_fn.(text)} end)
+    Enum.map(classifiers, fn {name, proba_fn} -> {name, proba_fn.(text)} end) ++ bert_result(text)
+  end
+
+  defp bert_result(text) do
+    if ToxicClassifier.Bert.status() == :ready do
+      case ToxicClassifier.Bert.toxic_score(text) do
+        nil -> []
+        score -> [{"toxic-bert", score}]
+      end
+    else
+      []
+    end
   end
 
   defp pct(p), do: "#{round(p * 100)}%"

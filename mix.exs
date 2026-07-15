@@ -29,7 +29,9 @@ defmodule ToxicClassifier.MixProject do
       {:phoenix_live_view, "~> 1.0"},
       {:phoenix_html, "~> 4.1"},
       {:bandit, "~> 1.5"},
-      {:jason, "~> 1.4"}
+      {:jason, "~> 1.4"},
+      {:bumblebee, "~> 0.6"},
+      {:exla, "~> 0.9"}
     ]
   end
 end

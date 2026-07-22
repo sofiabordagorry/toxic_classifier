@@ -86,7 +86,9 @@ defmodule PhishingClassifier.Bert do
       serving =
         Bumblebee.Text.text_classification(model, tokenizer,
           scores_function: m.scores_function,
-          compile: [batch_size: 1, sequence_length: 64],
+          # Bucketed lengths: short messages use the 64 bucket (fast), long
+          # emails use up to 512 (BERT's max) so the payload isn't truncated.
+          compile: [batch_size: 1, sequence_length: [64, 256, 512]],
           defn_options: [compiler: EXLA]
         )
 

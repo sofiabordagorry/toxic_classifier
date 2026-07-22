@@ -20,7 +20,7 @@ erl_crash.dump
 *.ez
 
 # Ignore package tarball (built via "mix hex.build").
-toxic_bayes-*.tar
+phishing_classifier-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/

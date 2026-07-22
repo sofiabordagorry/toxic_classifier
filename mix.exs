@@ -1,9 +1,9 @@
-defmodule ToxicClassifier.MixProject do
+defmodule PhishingClassifier.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :toxic_classifier,
+      app: :phishing_classifier,
       version: "0.1.0",
       elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -14,7 +14,7 @@ defmodule ToxicClassifier.MixProject do
 
   def application do
     [
-      mod: {ToxicClassifier.Application, []},
+      mod: {PhishingClassifier.Application, []},
       extra_applications: [:logger]
     ]
   end

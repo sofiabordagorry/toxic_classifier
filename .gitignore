@@ -24,3 +24,9 @@ phishing_classifier-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Persisted trained-model cache (see PhishingClassifier.ModelBundle).
+/priv/model_cache.bin
+
+# Large bundled dataset.
+/priv/data/phishing_email.csv

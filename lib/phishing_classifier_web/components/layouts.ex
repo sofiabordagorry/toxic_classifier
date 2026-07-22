@@ -24,12 +24,12 @@ defmodule PhishingClassifierWeb.Layouts do
           * { box-sizing: border-box; }
           body {
             font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-            margin: 0; padding: 4rem 1.25rem;
+            margin: 0; padding: 2.25rem 2.5rem;
             background: #faf9f8; color: var(--ink);
             display: flex; justify-content: center;
             -webkit-font-smoothing: antialiased;
           }
-          .wrap { width: 100%; max-width: 480px; }
+          .wrap { width: 100%; max-width: 1200px; }
           .header { text-align: center; margin-bottom: 1.75rem; }
           h1 { font-size: 1.45rem; font-weight: 700; margin: 0; letter-spacing: -.02em; }
           .sub { color: var(--muted); margin: .5rem auto 0; font-size: .92rem; max-width: 34ch; line-height: 1.5; }
@@ -70,8 +70,9 @@ defmodule PhishingClassifierWeb.Layouts do
           button:disabled { opacity: .55; cursor: default; }
           textarea {
             width: 100%; background: #fff; color: var(--ink);
-            border: 1px solid #d6d3d1; border-radius: 10px; padding: .8rem;
-            font-size: 1rem; font-family: inherit; resize: vertical; line-height: 1.5;
+            border: 1px solid #d6d3d1; border-radius: 10px; padding: .9rem;
+            font-size: .95rem; font-family: inherit; resize: vertical; line-height: 1.55;
+            min-height: 180px;
             transition: border-color .15s, box-shadow .15s;
           }
           textarea:focus {

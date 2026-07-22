@@ -1,7 +1,7 @@
 defmodule PhishingClassifierWeb.ClassifierLive do
   use PhishingClassifierWeb, :live_view
 
-  alias PhishingClassifier.{Dataset, ModelStore, NaiveBayes, ComplementNB, LogisticRegression}
+  alias PhishingClassifier.{Dataset, ModelStore, ModelBundle}
 
   @topic "models"
 
@@ -153,8 +153,8 @@ defmodule PhishingClassifierWeb.ClassifierLive do
 
         <form phx-change="classify">
           <label>Paste a message</label>
-          <textarea name="text" rows="3" phx-debounce="120"
-                    placeholder="e.g. Your account has been suspended. Verify your identity now..."><%= @text %></textarea>
+          <textarea name="text" rows="9" phx-debounce="120"
+                    placeholder="Paste an email here — e.g. Dear customer, we detected unusual activity on your account. Verify your identity within 24 hours or it will be permanently closed..."><%= @text %></textarea>
         </form>
 
         <div class="bert-picker">
@@ -213,34 +213,14 @@ defmodule PhishingClassifierWeb.ClassifierLive do
     {:ok, dest}
   end
 
+  # Train, persist the bundle to disk (so it survives a restart), and return the
+  # UI model map.
   defp train_models(path) do
-    examples = Dataset.load(path)
-
-    nb = NaiveBayes.train(examples, balance_ratio: 1.0, min_count: 2)
-    cnb = ComplementNB.from_model(nb)
-
-    lr =
-      LogisticRegression.train(examples,
-        balance_ratio: 1.0,
-        min_count: 2,
-        epochs: 8,
-        positive: :phish,
-        negative: :safe
-      )
-
-    classifiers = [
-      {"Naive Bayes", &Map.get(NaiveBayes.predict_proba(nb, &1), :phish, 0.0)},
-      {"Complement NB", &Map.get(ComplementNB.predict_proba(cnb, &1), :phish, 0.0)},
-      {"Logistic Regression", &Map.get(LogisticRegression.predict_proba(lr, &1), :phish, 0.0)}
-    ]
-
-    dist = Enum.frequencies_by(examples, fn {_text, label} -> label end)
-
-    summary =
-      "Trained on #{length(examples)} examples · " <>
-        "#{Map.get(dist, :phish, 0)} phishing / #{Map.get(dist, :safe, 0)} safe"
-
-    %{classifiers: classifiers, summary: summary}
+    path
+    |> Dataset.load()
+    |> ModelBundle.build()
+    |> ModelBundle.save()
+    |> ModelBundle.to_ui()
   end
 
   defp score(_models, "", _bert_id), do: []
